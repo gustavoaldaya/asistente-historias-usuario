@@ -1,0 +1,77 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "${identificador} — ${titulo}",
+      "size": "Small",
+      "isSubtle": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Bloque: ${nombre_bloque}",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${pregunta_guia}",
+      "isSubtle": true,
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${borrador}",
+          "wrap": true
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "✅ Aprobar",
+      "style": "positive",
+      "data": { "accion": "aprobar", "bloque": "${clave_bloque}" }
+    },
+    {
+      "type": "Action.ShowCard",
+      "title": "✏️ Editar",
+      "card": {
+        "type": "AdaptiveCard",
+        "body": [
+          {
+            "type": "Input.Text",
+            "id": "texto_editado",
+            "isMultiline": true,
+            "value": "${borrador}",
+            "label": "Edita el texto del bloque y envía"
+          }
+        ],
+        "actions": [
+          {
+            "type": "Action.Submit",
+            "title": "Guardar edición",
+            "data": { "accion": "editar", "bloque": "${clave_bloque}" }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "🔄 Regenerar",
+      "data": { "accion": "regenerar", "bloque": "${clave_bloque}" }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "⬅️ Volver a un bloque anterior",
+      "data": { "accion": "volver" }
+    }
+  ]
+}
