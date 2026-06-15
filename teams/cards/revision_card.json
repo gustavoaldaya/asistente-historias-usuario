@@ -1,0 +1,53 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Revisión integral — ${identificador} ${titulo}",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${documento_completo}",
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "style": "warning",
+      "isVisible": "${tiene_avisos}",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Incoherencias y huecos detectados",
+          "weight": "Bolder"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${avisos}",
+          "wrap": true
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "✅ Aprobación final — generar y guardar",
+      "style": "positive",
+      "data": { "accion": "aprobacion_final" }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "⬅️ Volver a un bloque",
+      "data": { "accion": "volver" }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "⏸️ Pausar sesión",
+      "data": { "accion": "pausar" }
+    }
+  ]
+}
