@@ -5,9 +5,17 @@ con las seis tablas de dos filas que usan las historias de ejemplo.
 Los borradores se escriben en `output/` y la tool devuelve sus rutas.
 """
 
+import re
+import unicodedata
 from pathlib import Path
 
 OUTPUT_DIR = Path("/tmp/hu-output")
+
+
+def _sanitizar_nombre(texto: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", texto)
+    sin_acentos = "".join(c for c in nfkd if not unicodedata.combining(c))
+    return re.sub(r"[^\w\-]", "_", sin_acentos).strip("_")
 
 ETIQUETAS = [
     ("usuario", "Usuario ¿Quién?", "Usuarios de negocio que participan en la historia"),
@@ -91,10 +99,9 @@ def _render_docx(historia: dict, ruta: Path) -> bool:
 
 def generar_documento(historia: dict) -> dict:
     OUTPUT_DIR.mkdir(exist_ok=True)
-    base = (
-        f"{historia.get('identificador', 'HU-XXX')}-"
-        f"{historia.get('titulo', 'sin-titulo').replace(' ', '_')}"
-    )
+    id_raw = historia.get("identificador", "HU-XXX")
+    titulo_raw = historia.get("titulo", "sin-titulo")
+    base = _sanitizar_nombre(f"{id_raw}-{titulo_raw}")
 
     ruta_md = OUTPUT_DIR / f"{base}.md"
     ruta_md.write_text(_render_markdown(historia), encoding="utf-8")

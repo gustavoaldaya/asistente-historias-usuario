@@ -75,8 +75,9 @@ def generar_documento_http(req: func.HttpRequest) -> func.HttpResponse:
         resultado = generar_documento(**body)
 
         if resultado.get("docx"):
+            from urllib.parse import quote
             filename = Path(resultado["docx"]).name
-            resultado["url_descarga"] = f"{BASE_URL}/descargar/{filename}"
+            resultado["url_descarga"] = f"{BASE_URL}/descargar?file={quote(filename)}"
 
         return func.HttpResponse(
             json.dumps(resultado, ensure_ascii=False),
@@ -97,27 +98,34 @@ def guardar_documento_http(req: func.HttpRequest) -> func.HttpResponse:
     return _http_tool(req, "guardar_documento", guardar_documento)
 
 
-@app.route(route="descargar/{filename}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="descargar", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def descargar_http(req: func.HttpRequest) -> func.HttpResponse:
-    filename = req.route_params.get("filename", "")
-    if not filename or ".." in filename or "/" in filename or "\\" in filename:
-        return func.HttpResponse("Archivo no válido", status_code=400)
+    try:
+        filename = req.params.get("file", "")
+        if not filename or ".." in filename or "/" in filename or "\\" in filename:
+            return func.HttpResponse("Archivo no válido", status_code=400)
 
-    filepath = OUTPUT_DIR / filename
-    if not filepath.is_file():
-        return func.HttpResponse("Archivo no encontrado", status_code=404)
+        filepath = OUTPUT_DIR / filename
+        if not filepath.is_file():
+            return func.HttpResponse(
+                "El documento ya no está disponible. Solicite al agente que lo genere de nuevo.",
+                status_code=404,
+            )
 
-    with open(filepath, "rb") as f:
-        content = f.read()
+        with open(filepath, "rb") as f:
+            content = f.read()
 
-    if filename.endswith(".docx"):
-        mimetype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    else:
-        mimetype = "application/octet-stream"
+        if filename.endswith(".docx"):
+            mimetype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        else:
+            mimetype = "application/octet-stream"
 
-    return func.HttpResponse(
-        content,
-        status_code=200,
-        mimetype=mimetype,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+        return func.HttpResponse(
+            content,
+            status_code=200,
+            mimetype=mimetype,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        logging.error("[descargar] Error: %s", e, exc_info=True)
+        return func.HttpResponse("Error al descargar el documento.", status_code=500)
