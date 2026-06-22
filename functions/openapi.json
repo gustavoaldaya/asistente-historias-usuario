@@ -107,7 +107,7 @@
     "/generar-documento": {
       "post": {
         "operationId": "generar_documento",
-        "summary": "Compone la historia de usuario en el formato de plantilla (Markdown y DOCX) a partir de los seis bloques aprobados. Devuelve las rutas de los borradores generados. Llamar solo tras la aprobación final del usuario.",
+        "summary": "Compone la historia de usuario en el formato de plantilla (Markdown y DOCX) a partir de los seis bloques aprobados. Devuelve una URL de descarga del DOCX. Llamar automáticamente tras la aprobación final del usuario.",
         "requestBody": {
           "required": true,
           "content": {
@@ -131,7 +131,8 @@
                   "type": "object",
                   "properties": {
                     "markdown": { "type": "string", "description": "Ruta del archivo Markdown generado" },
-                    "docx": { "type": "string", "nullable": true, "description": "Ruta del archivo DOCX generado (null si python-docx no está instalado)" }
+                    "docx": { "type": "string", "nullable": true, "description": "Ruta del archivo DOCX generado (null si python-docx no está instalado)" },
+                    "url_descarga": { "type": "string", "description": "URL pública para descargar el DOCX. Presentar este enlace al usuario en Teams." }
                   }
                 }
               }
