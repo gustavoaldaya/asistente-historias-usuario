@@ -3,3 +3,6 @@
 __pycache__/
 output/
 repositorio/
+functions/local.settings.json
+functions/.python_packages/
+*.7z

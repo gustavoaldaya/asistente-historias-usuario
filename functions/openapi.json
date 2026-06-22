@@ -1,0 +1,287 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "User Story Tools API",
+    "description": "Herramientas del agente Asistente de Historias de Usuario: buscar ejemplos, validar estructura, generar y guardar documentos.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://func-userstories-agent-001.azurewebsites.net/api"
+    }
+  ],
+  "paths": {
+    "/buscar-ejemplos": {
+      "post": {
+        "operationId": "buscar_ejemplos",
+        "summary": "Recupera la plantilla de historia de usuario y las historias de ejemplo de la base de conocimiento para fijar formato, estilo y terminología. Llamar al inicio de la sesión.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "consulta": {
+                    "type": "string",
+                    "description": "Texto libre para filtrar ejemplos (opcional). Vacío devuelve plantilla y lista de ejemplos."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plantilla y ejemplos encontrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "plantilla": {
+                      "type": "string",
+                      "description": "Contenido completo de la plantilla de historia de usuario"
+                    },
+                    "ejemplos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "nombre": { "type": "string" },
+                          "contenido": { "type": "string" }
+                        }
+                      },
+                      "description": "Hasta 2 historias de ejemplo"
+                    },
+                    "total_ejemplos_disponibles": {
+                      "type": "integer",
+                      "description": "Total de ejemplos en la base de conocimiento"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/validar-estructura": {
+      "post": {
+        "operationId": "validar_estructura",
+        "summary": "Comprueba que los seis bloques de la historia estén completos y sean coherentes (cada criterio tiene soporte en el flujo, no quedan marcas '[por confirmar]'). Llamar SIEMPRE antes de la revisión integral.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "historia": { "$ref": "#/components/schemas/Historia" }
+                },
+                "required": ["historia"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de la validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valida": { "type": "boolean", "description": "true si no hay errores bloqueantes" },
+                    "errores": { "type": "array", "items": { "type": "string" }, "description": "Errores bloqueantes" },
+                    "avisos": { "type": "array", "items": { "type": "string" }, "description": "Avisos mejorables" },
+                    "resumen": { "type": "string", "description": "Resumen del resultado de la validación" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generar-documento": {
+      "post": {
+        "operationId": "generar_documento",
+        "summary": "Compone la historia de usuario en el formato de plantilla (Markdown y DOCX) a partir de los seis bloques aprobados. Devuelve las rutas de los borradores generados. Llamar solo tras la aprobación final del usuario.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "historia": { "$ref": "#/components/schemas/Historia" }
+                },
+                "required": ["historia"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rutas de los documentos generados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "markdown": { "type": "string", "description": "Ruta del archivo Markdown generado" },
+                    "docx": { "type": "string", "nullable": true, "description": "Ruta del archivo DOCX generado (null si python-docx no está instalado)" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guardar-documento": {
+      "post": {
+        "operationId": "guardar_documento",
+        "summary": "Guarda el documento generado en el repositorio configurado y registra quién aprueba y cuándo. Llamar solo después de generar_documento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ruta_documento": {
+                    "type": "string",
+                    "description": "Ruta del documento devuelta por generar_documento."
+                  },
+                  "aprobado_por": {
+                    "type": "string",
+                    "description": "Nombre de la persona que da la aprobación final."
+                  },
+                  "fecha_aprobacion": {
+                    "type": "string",
+                    "description": "Fecha de la aprobación final (ISO 8601, p. ej. 2026-06-12)."
+                  }
+                },
+                "required": ["ruta_documento", "aprobado_por", "fecha_aprobacion"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento guardado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "guardado": { "type": "boolean" },
+                    "enlace": { "type": "string", "description": "Ruta del documento guardado" },
+                    "todos_los_formatos": { "type": "array", "items": { "type": "string" }, "description": "Rutas de todos los formatos guardados" },
+                    "aprobacion_registrada": {
+                      "type": "object",
+                      "properties": {
+                        "quien": { "type": "string" },
+                        "cuando": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Historia": {
+        "type": "object",
+        "description": "Historia de usuario con sus seis bloques.",
+        "properties": {
+          "identificador": {
+            "type": "string",
+            "description": "Identificador de la historia, p. ej. 'HU-011'. '[por confirmar]' si no se conoce."
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Título corto de la historia en mayúsculas, p. ej. 'PRESENTACIÓN GASTOS'."
+          },
+          "usuario": {
+            "type": "string",
+            "description": "Bloque Usuario (¿Quién?): personas o roles de negocio que participan."
+          },
+          "funcionalidad": {
+            "type": "string",
+            "description": "Bloque Funcionalidad (¿Qué?): descripción corta de la historia."
+          },
+          "objetivo": {
+            "type": "string",
+            "description": "Bloque Objetivo (¿Para qué?): valor de negocio, con la forma 'Para que … pueda …'."
+          },
+          "descripcion": {
+            "type": "object",
+            "description": "Bloque Descripción (¿Cómo?), estructurado.",
+            "properties": {
+              "encuadre": {
+                "type": "string",
+                "description": "Frase de encuadre con el mecanismo general."
+              },
+              "precondiciones": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Estado de partida requerido."
+              },
+              "pasos": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Flujo numerado: acciones del usuario y respuestas del sistema, en orden."
+              },
+              "validaciones": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Validaciones automáticas que realiza el sistema."
+              },
+              "almacenamiento": {
+                "type": "string",
+                "description": "Dónde se almacena el resultado y qué trazabilidad/auditoría queda."
+              },
+              "casos_error": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Casos de error o excepción; cada uno empieza por 'Si …'."
+              }
+            },
+            "required": ["encuadre", "pasos"]
+          },
+          "criterios_aceptacion": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Condiciones observables y verificables; cada una con soporte en el flujo."
+          },
+          "aceptacion_usuarios": {
+            "type": "object",
+            "properties": {
+              "quien": { "type": "string", "description": "Responsable de aceptar la historia." },
+              "cuando": { "type": "string", "description": "Momento o hito de la aceptación." }
+            },
+            "required": ["quien", "cuando"]
+          }
+        },
+        "required": [
+          "identificador",
+          "titulo",
+          "usuario",
+          "funcionalidad",
+          "objetivo",
+          "descripcion",
+          "criterios_aceptacion",
+          "aceptacion_usuarios"
+        ]
+      }
+    }
+  }
+}
